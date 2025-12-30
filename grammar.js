@@ -16,15 +16,26 @@ module.exports = grammar({
 
   rules: {
     // TODO: add the actual grammar rules
-    module: ($) => repeat($._command),
+    module: ($) => repeat(seq($._command, ".")),
 
     // basic tokens
-    identifier: ($) => /[A-Za-z_]+/,
+    identifier: ($) => /[a-zA-Z]+/,
 
     number: ($) => /[0-9]+/,
 
-    // Every file is sequence of vernacular commands
-    _command: ($) => seq(choice($.declaration), "."),
+    // qualified names
+    // FIXME: I suppose qualid shouldn't really be treated as a token
+    qualid: ($) => token(/[a-zA-Z]+([.][a-zA-Z]+)+/),
+
+    // Every file is a sequence of vernacular commands
+    _command: ($) => choice($.include, $.declaration),
+
+    include: ($) =>
+      seq(
+        "Require",
+        optional(choice("Import", "Export")),
+        choice($.qualid, $.identifier),
+      ),
 
     // type
     type: ($) => $.term,
@@ -61,18 +72,35 @@ module.exports = grammar({
         $.term_let,
         $.term_forall,
         $.term_fun,
-        $.term_match,
         $.term_if,
         $.term_expr,
+        $.term_application,
+        $.one_term,
       ),
 
-    term_expr: ($) =>
+    term_generalizing: ($) =>
       choice(
-        // $.unary_expr,
-        // $.binary_expr,
-        $.number,
-        $.identifier,
+        seq("`{", $.term, "}"),
+        seq(token.immediate("`("), $.term, token.immediate(")")),
       ),
+
+    // TODO: Add term_scope
+    one_term: ($) =>
+      choice(
+        $.qualid,
+        $.identifier,
+        $.term_match,
+        $.term_generalizing,
+        $.number,
+        // qualid annotated
+        seq("@", $.qualid),
+      ),
+
+    term_expr: ($) => choice(),
+    // $.unary_expr,
+    // $.binary_expr,
+
+    term_application: ($) => seq($.one_term, repeat1($.one_term)),
 
     term_let: ($) =>
       seq(
@@ -93,7 +121,7 @@ module.exports = grammar({
         "forall",
         field("binder", repeat1($.binder)),
         ",",
-        field("body", $.type),
+        field("body", $.term),
       ),
 
     term_fun: ($) =>
@@ -121,9 +149,9 @@ module.exports = grammar({
 
     definition_kind: ($) =>
       seq(
-        choice("Definition", "Example"),
+        choice("Definition", "Example", "Let"),
         field("name", $.identifier),
-        field("binder", repeat($.binder)),
+        optional(field("binder", repeat($.binder))),
         ":=",
         field("body", $.term),
       ),
@@ -133,7 +161,7 @@ module.exports = grammar({
         choice("Theorem", "Lemma", "Fact", "Remark", "Corollary"),
         field("name", $.identifier),
         field("binder", repeat($.binder)),
-        field("body", $.type),
+        field("body", $.term),
       ),
 
     assumption_kind: ($) =>

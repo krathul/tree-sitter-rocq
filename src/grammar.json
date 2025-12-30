@@ -6,33 +6,87 @@
     "module": {
       "type": "REPEAT",
       "content": {
-        "type": "SYMBOL",
-        "name": "_command"
+        "type": "SEQ",
+        "members": [
+          {
+            "type": "SYMBOL",
+            "name": "_command"
+          },
+          {
+            "type": "STRING",
+            "value": "."
+          }
+        ]
       }
     },
     "identifier": {
       "type": "PATTERN",
-      "value": "[A-Za-z_]+"
+      "value": "[a-zA-Z]+"
     },
     "number": {
       "type": "PATTERN",
       "value": "[0-9]+"
     },
+    "qualid": {
+      "type": "TOKEN",
+      "content": {
+        "type": "PATTERN",
+        "value": "[a-zA-Z]+([.][a-zA-Z]+)+"
+      }
+    },
     "_command": {
+      "type": "CHOICE",
+      "members": [
+        {
+          "type": "SYMBOL",
+          "name": "include"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "declaration"
+        }
+      ]
+    },
+    "include": {
       "type": "SEQ",
       "members": [
+        {
+          "type": "STRING",
+          "value": "Require"
+        },
+        {
+          "type": "CHOICE",
+          "members": [
+            {
+              "type": "CHOICE",
+              "members": [
+                {
+                  "type": "STRING",
+                  "value": "Import"
+                },
+                {
+                  "type": "STRING",
+                  "value": "Export"
+                }
+              ]
+            },
+            {
+              "type": "BLANK"
+            }
+          ]
+        },
         {
           "type": "CHOICE",
           "members": [
             {
               "type": "SYMBOL",
-              "name": "declaration"
+              "name": "qualid"
+            },
+            {
+              "type": "SYMBOL",
+              "name": "identifier"
             }
           ]
-        },
-        {
-          "type": "STRING",
-          "value": "."
         }
       ]
     },
@@ -200,28 +254,122 @@
         },
         {
           "type": "SYMBOL",
-          "name": "term_match"
-        },
-        {
-          "type": "SYMBOL",
           "name": "term_if"
         },
         {
           "type": "SYMBOL",
           "name": "term_expr"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "term_application"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "one_term"
         }
       ]
     },
-    "term_expr": {
+    "term_generalizing": {
       "type": "CHOICE",
       "members": [
+        {
+          "type": "SEQ",
+          "members": [
+            {
+              "type": "STRING",
+              "value": "`{"
+            },
+            {
+              "type": "SYMBOL",
+              "name": "term"
+            },
+            {
+              "type": "STRING",
+              "value": "}"
+            }
+          ]
+        },
+        {
+          "type": "SEQ",
+          "members": [
+            {
+              "type": "IMMEDIATE_TOKEN",
+              "content": {
+                "type": "STRING",
+                "value": "`("
+              }
+            },
+            {
+              "type": "SYMBOL",
+              "name": "term"
+            },
+            {
+              "type": "IMMEDIATE_TOKEN",
+              "content": {
+                "type": "STRING",
+                "value": ")"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "one_term": {
+      "type": "CHOICE",
+      "members": [
+        {
+          "type": "SYMBOL",
+          "name": "qualid"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "identifier"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "term_match"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "term_generalizing"
+        },
         {
           "type": "SYMBOL",
           "name": "number"
         },
         {
+          "type": "SEQ",
+          "members": [
+            {
+              "type": "STRING",
+              "value": "@"
+            },
+            {
+              "type": "SYMBOL",
+              "name": "qualid"
+            }
+          ]
+        }
+      ]
+    },
+    "term_expr": {
+      "type": "CHOICE",
+      "members": []
+    },
+    "term_application": {
+      "type": "SEQ",
+      "members": [
+        {
           "type": "SYMBOL",
-          "name": "identifier"
+          "name": "one_term"
+        },
+        {
+          "type": "REPEAT1",
+          "content": {
+            "type": "SYMBOL",
+            "name": "one_term"
+          }
         }
       ]
     },
@@ -498,6 +646,10 @@
             {
               "type": "STRING",
               "value": "Example"
+            },
+            {
+              "type": "STRING",
+              "value": "Let"
             }
           ]
         },
@@ -510,15 +662,23 @@
           }
         },
         {
-          "type": "FIELD",
-          "name": "binder",
-          "content": {
-            "type": "REPEAT",
-            "content": {
-              "type": "SYMBOL",
-              "name": "binder"
+          "type": "CHOICE",
+          "members": [
+            {
+              "type": "FIELD",
+              "name": "binder",
+              "content": {
+                "type": "REPEAT",
+                "content": {
+                  "type": "SYMBOL",
+                  "name": "binder"
+                }
+              }
+            },
+            {
+              "type": "BLANK"
             }
-          }
+          ]
         },
         {
           "type": "STRING",
